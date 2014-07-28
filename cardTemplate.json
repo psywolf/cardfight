@@ -1,0 +1,10 @@
+{
+  "py/object": "__main__.Card",
+  "name": "card 1",
+  "life": 5,
+  "dice": {
+    "green": 2,
+    "purple": 1,
+    "red": 1
+  }
+}

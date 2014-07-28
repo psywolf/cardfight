@@ -1,0 +1,38 @@
+{
+  "green": {
+    "py/object": "__main__.Die",
+    "attack": 5,
+    "defense": 4,
+    "numSides": 12
+  },
+  "purple": {
+    "py/object": "__main__.Die",
+    "attack": 4,
+    "defense": 4,
+    "numSides": 12
+  },
+  "white": {
+    "py/object": "__main__.Die",
+    "attack": 4,
+    "defense": 5,
+    "numSides": 12
+  },
+  "orange": {
+    "py/object": "__main__.Die",
+    "attack": 5,
+    "defense": 3,
+    "numSides": 12
+  },
+  "black": {
+    "py/object": "__main__.Die",
+    "attack": 6,
+    "defense": 3,
+    "numSides": 12
+  },
+  "red": {
+    "py/object": "__main__.Die",
+    "attack": 7,
+    "defense": 2,
+    "numSides": 12
+  }
+}

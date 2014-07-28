@@ -1,0 +1,5 @@
+{
+  "py/object": "__main__.Config",
+  "numFights": 1000,
+  "maxTurns": 100
+}
