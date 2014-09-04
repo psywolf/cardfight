@@ -25,7 +25,7 @@ def buildDice(row):
 
 parser = argparse.ArgumentParser(description='generate card files from excel spreadsheet')
 parser.add_argument('spreadsheet', metavar='spreadsheet.csv', type=str, help='the file path of CSV format spreadsheet')
-#parser.add_argument('-e','--excel', metavar='spreadsheet.csv', type=bool, help='the file path of CSV format spreadsheet')
+#parser.add_argument('-e','--excel', type=bool, help='csv file was generated from excel')
 
 args = parser.parse_args()
 
@@ -34,6 +34,9 @@ col = dict()
 
 with open(args.spreadsheet, newline='') as csvfile:
 	reader = csv.reader(csvfile, 'excel')
+
+	#if args.excel:
+	#	reader = csv.reader(csvfile, 'excel')
 
 	#use header row to set up col dict
 	header = next(reader, None)
