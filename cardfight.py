@@ -38,7 +38,20 @@ def fight(attacker, defender):
 		for _ in range(0,defender.dice[key]):
 			if random.randint(1,diceType.numSides) <= diceType.defense:
 				totalDefense += 1
-	return max(0,totalAttacks - totalDefense)
+
+	damage = max(0, totalAttacks - totalDefense)
+
+	if damage == 0:
+		return
+
+	if damage > defender.currentLife():
+		damage = defender.currentLife()
+
+	defender.wounds += damage
+	if Attr.lifedrain in attacker.attrs and Attr.construct not in defender.attrs:
+		#print("healing")
+		attacker.wounds = max(0, attacker.wounds - damage)
+
 
 def is_odd(x):
 	return x % 2 != 0
@@ -82,14 +95,14 @@ def fightToTheDeath(initialAtacker, initialDefender, maxTurns):
 			attacker = initialDefender
 			defender = initialAtacker
 
-		damage = fight(attacker, defender)
-		defender.life -= damage
+		fight(attacker, defender)
+		
 
 		#print("turn {}: {}({}) attacked {}({}) for {} damage".format(i, attacker.name, attacker.life, defender.name, defender.life, damage))
 
-		if initialDefender.life <= 0:
+		if initialDefender.currentLife() <= 0:
 			return Winner.attacker, i
-		elif initialAtacker.life <= 0:
+		elif initialAtacker.currentLife() <= 0:
 			return Winner.defender, i
 
 	return Winner.draw, maxTurns
