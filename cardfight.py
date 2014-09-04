@@ -3,7 +3,9 @@ import random
 import copy
 import enum
 import jsonpickle
+import pickle
 import argparse
+from sharedlib import Attr, Card
 
 class Config:
 	def __init__(self, numFights, maxTurns):
@@ -16,11 +18,6 @@ class Die:
 		self.defense = defense
 		self.numSides = numSides
 
-class Card:
-	def __init__(self, name, dice, life):
-		self.name = name
-		self.dice = dice
-		self.life = life
 
 class Winner(enum.Enum):
 	attacker = 1
@@ -118,12 +115,12 @@ parser.add_argument('card2', metavar='Card_2', type=str, help='the file path of 
 args = parser.parse_args()
 
 card1 = None
-with open(args.card1) as f:
-	card1 = jsonpickle.decode(f.read())
+with open(args.card1, 'rb') as f:
+	card1 = pickle.load(f)
 
 card2 = None
-with open(args.card2) as f:
-	card2 = jsonpickle.decode(f.read())
+with open(args.card2, 'rb') as f:
+	card2 = pickle.load(f)
 
 config = None
 with open("config.json") as f:

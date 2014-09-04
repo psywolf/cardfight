@@ -3,7 +3,7 @@ import argparse
 import csv
 from sharedlib import Attr, Card
 from pprint import pprint
-import jsonpickle
+import pickle
 
 def buildAttrs(row):
 	attrs = dict()
@@ -54,7 +54,8 @@ with open(args.spreadsheet, newline='') as csvfile:
 				buildDice(row),
 				buildAttrs(row))
 
-		with open(card.name + '.card', 'w') as f:
-			f.write(jsonpickle.encode(card))
+		with open(card.name + '.card', 'wb') as f:
+			#f.write(jsonpickle.encode(card))
+			pickle.dump(card,f)
 
 
