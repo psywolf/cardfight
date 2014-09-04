@@ -7,8 +7,8 @@
   },
   "purple": {
     "py/object": "__main__.Die",
-    "attack": 4,
-    "defense": 4,
+    "attack": 5,
+    "defense": 3,
     "numSides": 12
   },
   "white": {
@@ -32,6 +32,12 @@
   "red": {
     "py/object": "__main__.Die",
     "attack": 7,
+    "defense": 2,
+    "numSides": 12
+  },
+  "armor": {
+    "py/object": "__main__.Die",
+    "attack": 0,
     "defense": 2,
     "numSides": 12
   }

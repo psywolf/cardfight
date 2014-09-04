@@ -1,0 +1,12 @@
+{
+  "wounds": 0,
+  "name": "Beast-Rider Elite",
+  "dice": {
+    "red": 3
+  },
+  "attrs": {},
+  "life": 2,
+  "py/object": "sharedlib.Card",
+  "move": 4,
+  "range": 1
+}
