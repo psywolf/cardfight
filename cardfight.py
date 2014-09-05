@@ -27,12 +27,24 @@ class Winner(enum.Enum):
 	draw = 0
 
 def fight(attacker, defender):
-	totalAttacks = 0
+	attack(attacker, defender)
+	if Attr.doubleAttack in attacker.attrs and attacker.currentLife() > 0 and defender.currentLife() > 0:
+		attack(attacker, defender)
+
+def attack(attacker, defender):
+	totalAttack = 0
+
+	if Attr.ethereal in defender.attrs:
+		blackDie = diceTypes["black"]
+		for _ in range(0,2):
+			if random.randint(1,blackDie.numSides) <= blackDie.magic:
+				return
+
 	for key in attacker.dice:
 		diceType = diceTypes[key]
 		for _ in range(0,attacker.dice[key]):
 			if random.randint(1,diceType.numSides) <= diceType.attack:
-				totalAttacks += 1
+				totalAttack += 1
 
 	totalDefense = 0
 	for key in defender.dice:
@@ -41,9 +53,11 @@ def fight(attacker, defender):
 			if random.randint(1,diceType.numSides) <= diceType.defense:
 				totalDefense += 1
 
-	damage = max(0, totalAttacks - totalDefense)
+	damage = max(0, totalAttack - totalDefense)
 
 	if damage == 0:
+		if Attr.counterstrike in defender.attrs:
+			attacker.wounds += 1
 		return
 
 	if damage > defender.currentLife():
@@ -51,7 +65,6 @@ def fight(attacker, defender):
 
 	defender.wounds += damage
 	if Attr.lifedrain in attacker.attrs and Attr.construct not in defender.attrs:
-		#print("healing")
 		attacker.wounds = max(0, attacker.wounds - damage)
 
 
@@ -87,8 +100,10 @@ def winsToAvgTurn(winTimes):
 	return round(sum(winTimes)/len(winTimes))
 
 def fightToTheDeath(initialAtacker, initialDefender, maxTurns):
+	distance = max(initialAtacker.range, initialDefender.range) + 1
+	#print("distance:",distance)
 	for i in range(1,maxTurns+1):
-		attacker = None;
+		attacker = None
 		defender = None
 		if is_odd(i):
 			attacker = initialAtacker
@@ -97,10 +112,14 @@ def fightToTheDeath(initialAtacker, initialDefender, maxTurns):
 			attacker = initialDefender
 			defender = initialAtacker
 
-		fight(attacker, defender)
-		
+		#print("turn",i)
+		if(distance > attacker.range):
+			distance = max(1,distance - attacker.move, attacker.range)
+			#print("{} moved.  dintance is now {}".format(attacker.name, distance))
 
-		#print("turn {}: {}({}) attacked {}({}) for {} damage".format(i, attacker.name, attacker.life, defender.name, defender.life, damage))
+		if(distance <= attacker.range):
+			fight(attacker, defender)
+			#print("{}({}) attacked {}({})".format(attacker.name, attacker.life, defender.name, defender.life))
 
 		if initialDefender.currentLife() <= 0:
 			return Winner.attacker, i
@@ -112,16 +131,6 @@ def fightToTheDeath(initialAtacker, initialDefender, maxTurns):
 diceTypes = None
 with open("dice.json") as f:
 	diceTypes = jsonpickle.decode(f.read())
-"""
-diceTypes = {
-	"red": Die(7,2),
-	"black": Die(6,3),
-	"orange": Die(5,3),
-	"green": Die(5,4),
-	"white": Die(4,5),
-	"purple": Die(4,4)
-}
-"""
 
 parser = argparse.ArgumentParser(description='Fight two cards to the death')
 parser.add_argument('card1', metavar='Card_1', type=str, help='the file path of card #1')
