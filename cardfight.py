@@ -6,6 +6,7 @@ import jsonpickle
 import pickle
 import argparse
 from sharedlib import Attr, Card
+import json
 
 class Config:
 	def __init__(self, numFights, maxTurns):
@@ -71,7 +72,7 @@ def attack(attacker, defender):
 def is_odd(x):
 	return x % 2 != 0
 
-def getStats(attacker, defender, numFights, maxTurns):	
+def getStats(attacker, defender, numFights, maxTurns, scriptable):	
 	outcomes = dict()
 	for w in Winner:
 		outcomes[w] = []
@@ -83,16 +84,32 @@ def getStats(attacker, defender, numFights, maxTurns):
 		outcomes[winner].append(turns)
 
 	wins = len(outcomes[Winner.attacker])
-	print("attacker ({}) winrate: {}%\n\tavg win on turn {}".format(
-		attacker.name, 100 * wins/numFights, winsToAvgTurn(outcomes[Winner.attacker])))
-
 	losses = len(outcomes[Winner.defender])
-	print("defender ({}) winrate: {}%\n\tavg win on turn {}".format(
-		defender.name, 100 * losses/numFights, winsToAvgTurn(outcomes[Winner.defender])))
-
 	draws = len(outcomes[Winner.draw])
-	if draws > 0:
-		print("drawrate (after {} turns): {}%".format(maxTurns, 100 * draws/numFights))
+
+	if scriptable:
+		output = dict()
+		output["WINS"] = wins
+		output["LOSSES"] = losses
+		output["DRAWS"] = draws
+		print(json.dumps(output))
+	else:
+		print("attacker ({}) winrate: {}%\n\tavg win on turn {}".format(
+			attacker.name, 100 * wins/numFights, winsToAvgTurn(outcomes[Winner])))
+
+		print("defender ({}) winrate: {}%\n\tavg win on turn {}".format(
+			defender.name, 100 * losses/numFights, winsToAvgTurn(outcomes[Winner])))
+
+		if draws > 0:
+			print("drawrate (after {} turns): {}%".format(maxTurns, 100 * draws/numFights))
+	
+
+	if wins > losses:
+		return True
+	elif losses > wins:
+		return False
+	else:
+		return None
 
 def winsToAvgTurn(winTimes):
 	if len(winTimes) == 0:
@@ -135,6 +152,8 @@ with open("dice.json") as f:
 parser = argparse.ArgumentParser(description='Fight two cards to the death')
 parser.add_argument('card1', metavar='Card_1', type=str, help='the file path of card #1')
 parser.add_argument('card2', metavar='Card_2', type=str, help='the file path of card #2')
+parser.add_argument('-s','--scriptable', action="store_true", help='print output in a more easily parsable way')
+parser.add_argument('-a', '--attack-only', action="store_true", help='attack only (don\'t run the simulation both ways)')
 
 args = parser.parse_args()
 
@@ -151,7 +170,8 @@ with open("config.json") as f:
 	config = jsonpickle.decode(f.read())
 
 print()
-getStats(card1, card2, config.numFights, config.maxTurns)
+getStats(card1, card2, config.numFights, config.maxTurns, args.scriptable)
 print()
-getStats(card2, card1, config.numFights, config.maxTurns)
-print()
+if not args.attack_only:
+	getStats(card2, card1, config.numFights, config.maxTurns, args.scriptable)
+	print()
