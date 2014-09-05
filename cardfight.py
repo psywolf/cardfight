@@ -13,9 +13,11 @@ class Config:
 		self.maxTurns = maxTurns
 
 class Die:
-	def __init__(self, attack, defense, numSides=12):
+	def __init__(self, attack, defense, magic, mundane, numSides=12):
 		self.attack = attack
 		self.defense = defense
+		self.magic = magic
+		self.mundane = mundane
 		self.numSides = numSides
 
 
