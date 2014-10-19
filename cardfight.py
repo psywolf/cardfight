@@ -36,7 +36,7 @@ def is_rampage():
 	return random.randint(1, redDie.numSides) <= redDie.mundane or random.randint(1, greenDie.numSides) <= greenDie.mundane
 
 def calculateDamage(attacker, defender):
-	if Attr.ethereal in defender.attrs and roll({"black", 2}, "magic") > 0:
+	if Attr.ethereal in defender.attrs and roll({"black": 2}, "magic") > 0:
 		return 0
 
 	totalAttack = roll(attacker.dice, "attack")
