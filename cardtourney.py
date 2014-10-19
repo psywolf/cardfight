@@ -10,7 +10,7 @@ import pickle
 
 cards = glob.glob('./*.card')
 notImplementedCards = []
-notImplementedAttrs = frozenset([Attr.magus])
+notImplementedAttrs = frozenset([])
 
 for cardFile in cards:
 	card = None

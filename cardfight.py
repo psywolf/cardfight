@@ -68,19 +68,21 @@ def attack(attacker, defender):
 		damage = 1
 	else:
 		damage = calculateDamage(attacker, defender)
-
-		if damage == 0:
-			if Attr.counterstrike in defender.attrs:
-				attacker.wounds += 1
+		if Attr.magus in attacker.attrs and damage == 0:
+			damage = roll({"orange":1}, "magic")
 		else:
-			if Attr.gorgon in attacker.attrs and roll(attacker.dice, "magic") >= 2:
-				return attacker
+			if damage == 0:
+				if Attr.counterstrike in defender.attrs:
+					attacker.wounds += 1
+			else:
+				if Attr.gorgon in attacker.attrs and roll(attacker.dice, "magic") >= 2:
+					return attacker
 
-			if damage > defender.currentLife():
-				damage = defender.currentLife()
+				if damage > defender.currentLife():
+					damage = defender.currentLife()
 
-			if Attr.lifedrain in attacker.attrs and Attr.construct not in defender.attrs:
-				attacker.wounds = max(0, attacker.wounds - damage)
+				if Attr.lifedrain in attacker.attrs and Attr.construct not in defender.attrs:
+					attacker.wounds = max(0, attacker.wounds - damage)
 
 	defender.wounds += damage
 	if defender.currentLife() <= 0:
