@@ -23,65 +23,73 @@ class Winner(enum.Enum):
 	draw = 0
 
 def fight(attacker, defender):
-	attack(attacker, defender)
-	if attacker.currentLife() <= 0 or defender.currentLife() <= 0:
-		return
+	winner = attack(attacker, defender)
+	if winner != None:
+		return winner
 
-	if Attr.doubleAttack in attacker.attrs or (Attr.rampage in attacker.attrs and is_rampage()):
-		attack(attacker, defender)
+	if Attr.doubleAttack in attacker.attrs:
+		return attack(attacker, defender)
 
 def is_rampage():
 	redDie = diceTypes["red"]
 	greenDie = diceTypes["green"]
 	return random.randint(1, redDie.numSides) <= redDie.mundane or random.randint(1, greenDie.numSides) <= greenDie.mundane
 
+def calculateDamage(attacker, defender):
+	if Attr.ethereal in defender.attrs and roll({"black", 2}, "magic") > 0:
+		return 0
 
+	totalAttack = roll(attacker.dice, "attack")
 
-def attack(attacker, defender):
-	totalAttack = 0
-
-	if Attr.ethereal in defender.attrs:
-		blackDie = diceTypes["black"]
-		for _ in range(0,2):
-			if random.randint(1,blackDie.numSides) <= blackDie.magic:
-				return
-
-	for key in attacker.dice:
-		diceType = diceTypes[key]
-		for _ in range(0,attacker.dice[key]):
-			if random.randint(1,diceType.numSides) <= diceType.attack:
-				totalAttack += 1
-
-	totalDefense = 0
-	for key in defender.dice:
-		diceType = diceTypes[key]
-		for _ in range(0,defender.dice[key]):
-			if random.randint(1,diceType.numSides) <= diceType.defense:
-				totalDefense += 1
+	totalDefense = roll(defender.dice, "defense")
 
 	if Attr.damageReduction in defender.attrs:
 		totalDefense += 1
 
 	damage = max(0, totalAttack - totalDefense)
 
-	orangeDie = diceTypes["orange"]
 	if Attr.anaconda in attacker.attrs:
-		for i in range(0,damage):
-			if random.randint(1,orangeDie.numSides) <= orangeDie.mundane:
-				damage += 1
+		damage += roll({"orange": damage}, "mundane")
 
+	return damage
 
-	if damage == 0:
-		if Attr.counterstrike in defender.attrs:
-			attacker.wounds += 1
-		return
+def roll(dice, successSide):
+	total = 0
+	for key in dice:
+		diceType = diceTypes[key]
+		for _ in range(0,dice[key]):
+			if random.randint(1,diceType.numSides) <= getattr(diceType,successSide):
+				total += 1
+	return total
 
-	if damage > defender.currentLife():
-		damage = defender.currentLife()
+def attack(attacker, defender):
+	damage = None
+	if Attr.theroll in defender.attrs:
+		damage = 1
+	else:
+		damage = calculateDamage(attacker, defender)
+
+		if damage == 0:
+			if Attr.counterstrike in defender.attrs:
+				attacker.wounds += 1
+		else:
+			if Attr.gorgon in attacker.attrs and roll(attacker.dice, "magic") >= 2:
+				return attacker
+
+			if damage > defender.currentLife():
+				damage = defender.currentLife()
+
+			if Attr.lifedrain in attacker.attrs and Attr.construct not in defender.attrs:
+				attacker.wounds = max(0, attacker.wounds - damage)
 
 	defender.wounds += damage
-	if Attr.lifedrain in attacker.attrs and Attr.construct not in defender.attrs:
-		attacker.wounds = max(0, attacker.wounds - damage)
+	if defender.currentLife() <= 0:
+		return attacker
+
+	if attacker.currentLife() <= 0:
+		return defender
+
+	return None
 
 
 def is_odd(x):
@@ -149,12 +157,40 @@ def fightToTheBitterEnd(attacker, defender, maxTurns):
 
 	return w, t
 
+def takeTurn(attacker, defender, distance):
+	if Attr.theroll in attacker.attrs:
+		attacker.wounds += 1
+		if attacker.currentLife() <= 0:
+			return defender, distance
+	#print("turn",i)
+	if distance > attacker.range:
+		distance = max(1,distance - attacker.move, attacker.range)
+		#print("{} moved.  dintance is now {}".format(attacker.name, distance))
+
+	if distance > attacker.range:
+		return None, distance
+
+	winner = fight(attacker, defender)
+	#print("{}({}) attacked {}({})".format(attacker.name, attacker.life, defender.name, defender.life))
+
+	if winner != None:
+		return winner, distance
+
+	if Attr.falconer in attacker.attrs and defender.range + defender.move < distance + attacker.move:
+		#move just out of reach
+		distance = defender.range + defender.move + 1
+
+	return None, distance
+
 def fightToTheDeath(initialAttacker, initialDefender, maxTurns):
 	distance = max(initialAttacker.range, initialDefender.range) + 1
 	#print("distance:",distance)
+	winner = None
+	i = 1
 	for i in range(1,maxTurns+1):
 		attacker = None
 		defender = None
+
 		if is_odd(i):
 			attacker = initialAttacker
 			defender = initialDefender
@@ -162,52 +198,52 @@ def fightToTheDeath(initialAttacker, initialDefender, maxTurns):
 			attacker = initialDefender
 			defender = initialAttacker
 
-		#print("turn",i)
-		if(distance > attacker.range):
-			distance = max(1,distance - attacker.move, attacker.range)
-			#print("{} moved.  dintance is now {}".format(attacker.name, distance))
+		winner, distance = takeTurn(attacker, defender, distance)
+		if winner != None:
+			break
 
-		if(distance <= attacker.range):
-			fight(attacker, defender)
-			#print("{}({}) attacked {}({})".format(attacker.name, attacker.life, defender.name, defender.life))
-
-		if initialDefender.currentLife() <= 0:
-			return Winner.attacker, i
-		elif initialAttacker.currentLife() <= 0:
-			return Winner.defender, i
+		if Attr.theroll in attacker.attrs or (Attr.rampage in attacker.attrs and is_rampage()):
+			winner, distance = takeTurn(attacker, defender, distance)
+			if winner != None:
+				break
 
 
+	if winner == None:
+		return Winner.draw, i
+	elif winner.name == initialAttacker.name:
+		return Winner.attacker, i
+	else:
+		return Winner.defender, i
 
-	return Winner.draw, maxTurns
 
+if __name__ == '__main__':
+	diceTypes = None
+	with open("dice.json") as f:
+		diceTypes = jsonpickle.decode(f.read())
 
-diceTypes = None
-with open("dice.json") as f:
-	diceTypes = jsonpickle.decode(f.read())
+	parser = argparse.ArgumentParser(description='Fight two cards to the death')
+	parser.add_argument('card1', metavar='Card_1', type=str, help='the file path of card #1')
+	parser.add_argument('card2', metavar='Card_2', type=str, help='the file path of card #2')
+	parser.add_argument('-s','--scriptable', action="store_true", help='print output in a more easily parsable way')
+	parser.add_argument('-a', '--attack-only', action="store_true", help='attack only (don\'t run the simulation both ways)')
 
-parser = argparse.ArgumentParser(description='Fight two cards to the death')
-parser.add_argument('card1', metavar='Card_1', type=str, help='the file path of card #1')
-parser.add_argument('card2', metavar='Card_2', type=str, help='the file path of card #2')
-parser.add_argument('-s','--scriptable', action="store_true", help='print output in a more easily parsable way')
-parser.add_argument('-a', '--attack-only', action="store_true", help='attack only (don\'t run the simulation both ways)')
+	args = parser.parse_args()
 
-args = parser.parse_args()
+	card1 = None
+	with open(args.card1, 'rb') as f:
+		card1 = pickle.load(f)
 
-card1 = None
-with open(args.card1, 'rb') as f:
-	card1 = pickle.load(f)
+	card2 = None
+	with open(args.card2, 'rb') as f:
+		card2 = pickle.load(f)
 
-card2 = None
-with open(args.card2, 'rb') as f:
-	card2 = pickle.load(f)
+	config = None
+	with open("config.json") as f:
+		config = jsonpickle.decode(f.read())
 
-config = None
-with open("config.json") as f:
-	config = jsonpickle.decode(f.read())
-
-print()
-getStats(card1, card2, config.numFights, config.maxTurns, args.scriptable)
-print()
-if not args.attack_only:
-	getStats(card2, card1, config.numFights, config.maxTurns, args.scriptable)
 	print()
+	getStats(card1, card2, config.numFights, config.maxTurns, args.scriptable)
+	print()
+	if not args.attack_only:
+		getStats(card2, card1, config.numFights, config.maxTurns, args.scriptable)
+		print()
