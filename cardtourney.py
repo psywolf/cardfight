@@ -10,18 +10,16 @@ import pickle
 
 cards = glob.glob('./*.card')
 notImplementedCards = []
+notImplementedAttrs = frozenset([Attr.magus, Attr.gorgon, Attr.falconer, Attr.theroll])
 
 for cardFile in cards:
 	card = None
 	with open(cardFile, 'rb') as f:
 		card = pickle.load(f)
 
-	missingAttrs = []
-	for attr in card.attrs:
-		if attr not in Attr:
-			missingAttrs.append(attr)
-	if len(missingAttrs) > 0:
-		notImplementedCards.append([card] + missingAttrs)
+	niAttrs = notImplementedAttrs.intersection(card.attrs)
+	if len(niAttrs) > 0:
+		print("Card '" + card.name + "' not implement yet due to the attribute(s): "+",".join([a.value for a in niAttrs]))
 		cards.remove(cardFile)
 
 results = []
