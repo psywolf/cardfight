@@ -1,13 +1,25 @@
 from enum import Enum
 class Attr(Enum):
 	lifedrain = "Life Drain"
-	haste = "Haste"
 	ethereal = "Ethereal"
 	counterstrike = "Counterstrike"
 	doubleAttack = "Double Attack"
 	damageReduction = "Damage Reduction"
 	rampage = "Rampage"
 	construct = "Construct"
+	anaconda = "Anaconda"
+	isle = "Isle"
+	wyrm = "Wyrm"
+	magus = "Magus"
+	gorgon = "Gorgon"
+	falconer = "Falconer"
+	theroll = "Theroll"
+
+	#these aren't implemented, but they can be safely ignored
+	haste = "Haste"
+	vilkas = "Vilkas"
+	summonAnywhere = "Summon Anywhere"
+
 
 
 
@@ -26,3 +38,8 @@ class Card:
 
 	def currentLife(self):
 		return max(0, self.life - self.wounds)
+
+class Config:
+	def __init__(self, numFights, maxTurns):
+		self.numFights = numFights
+		self.maxTurns = maxTurns

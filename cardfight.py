@@ -5,13 +5,8 @@ import enum
 import jsonpickle
 import pickle
 import argparse
-from sharedlib import Attr, Card
+from sharedlib import Attr, Card, Config
 import json
-
-class Config:
-	def __init__(self, numFights, maxTurns):
-		self.numFights = numFights
-		self.maxTurns = maxTurns
 
 class Die:
 	def __init__(self, attack, defense, magic, mundane, numSides=12):
@@ -29,8 +24,18 @@ class Winner(enum.Enum):
 
 def fight(attacker, defender):
 	attack(attacker, defender)
-	if Attr.doubleAttack in attacker.attrs and attacker.currentLife() > 0 and defender.currentLife() > 0:
+	if attacker.currentLife() <= 0 or defender.currentLife() <= 0:
+		return
+
+	if Attr.doubleAttack in attacker.attrs or (Attr.rampage in attacker.attrs and is_rampage()):
 		attack(attacker, defender)
+
+def is_rampage():
+	redDie = diceTypes["red"]
+	greenDie = diceTypes["green"]
+	return random.randint(1, redDie.numSides) <= redDie.mundane or random.randint(1, greenDie.numSides) <= greenDie.mundane
+
+
 
 def attack(attacker, defender):
 	totalAttack = 0
@@ -54,7 +59,17 @@ def attack(attacker, defender):
 			if random.randint(1,diceType.numSides) <= diceType.defense:
 				totalDefense += 1
 
+	if Attr.damageReduction in defender.attrs:
+		totalDefense += 1
+
 	damage = max(0, totalAttack - totalDefense)
+
+	orangeDie = diceTypes["orange"]
+	if Attr.anaconda in attacker.attrs:
+		for i in range(0,damage):
+			if random.randint(1,orangeDie.numSides) <= orangeDie.mundane:
+				damage += 1
+
 
 	if damage == 0:
 		if Attr.counterstrike in defender.attrs:
@@ -80,7 +95,8 @@ def getStats(attacker, defender, numFights, maxTurns, scriptable):
 	for i in range(0,numFights):
 		a = copy.copy(attacker)
 		d = copy.copy(defender)
-		winner, turns = fightToTheDeath(a, d, maxTurns)
+		winner, turns = fightToTheBitterEnd(a, d, maxTurns)
+
 		outcomes[winner].append(turns)
 
 	wins = len(outcomes[Winner.attacker])
@@ -95,10 +111,10 @@ def getStats(attacker, defender, numFights, maxTurns, scriptable):
 		print(json.dumps(output))
 	else:
 		print("attacker ({}) winrate: {}%\n\tavg win on turn {}".format(
-			attacker.name, 100 * wins/numFights, winsToAvgTurn(outcomes[Winner])))
+			attacker.name, 100 * wins/numFights, winsToAvgTurn(outcomes[Winner.attacker])))
 
 		print("defender ({}) winrate: {}%\n\tavg win on turn {}".format(
-			defender.name, 100 * losses/numFights, winsToAvgTurn(outcomes[Winner])))
+			defender.name, 100 * losses/numFights, winsToAvgTurn(outcomes[Winner.defender])))
 
 		if draws > 0:
 			print("drawrate (after {} turns): {}%".format(maxTurns, 100 * draws/numFights))
@@ -116,18 +132,35 @@ def winsToAvgTurn(winTimes):
 		return "N/A"
 	return round(sum(winTimes)/len(winTimes))
 
-def fightToTheDeath(initialAtacker, initialDefender, maxTurns):
-	distance = max(initialAtacker.range, initialDefender.range) + 1
+def fightToTheBitterEnd(attacker, defender, maxTurns):
+	w, t = fightToTheDeath(attacker, defender, maxTurns)
+
+	deadCard = None
+	winCard = None
+	if w == Winner.attacker:
+		winCard = attacker
+		deadCard = defender
+	elif w == Winner.defender:
+		winCard = defender
+		deadCard = attacker
+
+	if deadCard != None and (Attr.isle in deadCard.attrs or (Attr.wyrm in deadCard.attrs and winCard.currentLife() <= 1)):
+		return Winner.draw, t
+
+	return w, t
+
+def fightToTheDeath(initialAttacker, initialDefender, maxTurns):
+	distance = max(initialAttacker.range, initialDefender.range) + 1
 	#print("distance:",distance)
 	for i in range(1,maxTurns+1):
 		attacker = None
 		defender = None
 		if is_odd(i):
-			attacker = initialAtacker
+			attacker = initialAttacker
 			defender = initialDefender
 		else:
 			attacker = initialDefender
-			defender = initialAtacker
+			defender = initialAttacker
 
 		#print("turn",i)
 		if(distance > attacker.range):
@@ -140,10 +173,13 @@ def fightToTheDeath(initialAtacker, initialDefender, maxTurns):
 
 		if initialDefender.currentLife() <= 0:
 			return Winner.attacker, i
-		elif initialAtacker.currentLife() <= 0:
+		elif initialAttacker.currentLife() <= 0:
 			return Winner.defender, i
 
+
+
 	return Winner.draw, maxTurns
+
 
 diceTypes = None
 with open("dice.json") as f:
